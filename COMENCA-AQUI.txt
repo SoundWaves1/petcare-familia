@@ -1,0 +1,118 @@
+PETCARE FAMÍLIA — PROJECTE RECONSTRUÏT
+
+Aquesta és una nova versió, no una còpia del ZIP perdut.
+Inclou comptes individuals, família compartida, fitxes d'animals, historial
+de visites/vacunes/desparasitacions/medicaments/pes, costos i documents privats.
+Els recordatoris es mostren dins l'app; no hi ha notificacions push.
+Cal connexió a Internet. No es guarden historials per a consulta sense connexió.
+No hi ha invitacions des de l'app: els membres els assigna l'administrador.
+No s'ha connectat ni desplegat automàticament al teu Supabase o Vercel.
+
+PAS 1 — CREAR LES TAULES
+1. Entra a supabase.com/dashboard i selecciona NOMÉS el projecte PetCare.
+2. Obre SQL Editor i crea una consulta nova.
+3. Obre supabase.sql amb el Bloc de notes, copia TOT el contingut,
+   enganxa'l a la consulta de Supabase i prem Run.
+4. Si diu Success, continua. Si diu Error, copia el missatge al xat.
+   No tornis a executar ni esborris taules per resoldre'l.
+Aquest esquema està pensat per a un projecte sense taules PetCare prèvies.
+Si ja hi ha families, family_members, pets, events, documents o el bucket
+petcare-documents, s'aturarà sense substituir-los. Caldrà una migració.
+
+PAS 2 — CREAR ELS DOS COMPTES
+A Supabase, Authentication > Users > Add user > Create user.
+Crea un compte amb el teu correu i un altre amb el de la Raquel.
+Marca Auto Confirm User si apareix. Poseu contrasenyes diferents i llargues
+que cadascú conegui. No compartiu les contrasenyes al xat.
+A la configuració d'Auth, desactiva les noves altes públiques (Allow new users
+to sign up) per mantenir un accés familiar controlat.
+
+PAS 3 — ASSIGNAR LA FAMÍLIA I ELS ANIMALS
+Obre 02-crear-familia.sql amb el Bloc de notes.
+Substitueix CANVIA-PEL-TEU-CORREU i CANVIA-PEL-CORREU-DE-RAQUEL pels correus
+que acabes de crear, mantenint les cometes simples.
+Enganxa TOT el fitxer a una consulta NOVA del SQL Editor i prem Run.
+Es creen una família, dos membres i Kylo, Venus i Thor. No s'inventa cap
+espècie, raça, data de naixement ni informació veterinària: ho completareu.
+No executis aquest pas dues vegades. Si ja existeix membresia, s'atura.
+Els correus introduïts són només per al SQL Editor: no pugis aquest fitxer
+personalitzat a un repositori públic.
+
+PAS 4 — COMPROVAR LA SEGURETAT
+Abans de dades reals, executa tests/rls.sql com a consulta nova. Al final
+ha de dir: Proves SQL superades; dades fictícies desfetes.
+Si falla, copia l'error i executa ROLLBACK; en una consulta nova.
+Les proves creen dades fictícies i les desfan. No són una auditoria exhaustiva.
+També cal provar des de l'app dos comptes familiars i un tercer compte aliè:
+els dos primers comparteixen dades i el tercer no pot accedir-hi.
+Prova documents amb sessió i sense sessió i comprova que no tenen URL pública.
+El SQL Editor com a administrador NO és una prova d'accés del navegador.
+
+PAS 5 — PREPARAR VERCEL
+El projecte és estàtic, sense dependències de tercers per instal·lar.
+Puja el contingut d'aquesta carpeta a un repositori GitHub privat i importa'l
+a Vercel amb Add New > Project. L'arrel del projecte ha de contenir package.json.
+No pugis .env ni el fitxer 02-crear-familia.sql amb els correus reals.
+Framework: Other. Node.js: 22 o superior.
+Build Command: npm run build. Output Directory: dist.
+Si Vercel demana Install Command, npm install és suficient (no hi ha dependències).
+
+A Settings > Environment Variables, afegeix a Production:
+SUPABASE_URL = l'URL HTTPS del projecte Supabase
+SUPABASE_PUBLISHABLE_KEY = la clau publishable (o anon antiga)
+Les trobaràs al diàleg Connect o a la configuració d'API del projecte Supabase.
+NO utilitzis service_role, sb_secret_, contrasenyes, tokens personals ni
+la cadena de connexió de la base de dades. El build rebutja claus secretes.
+L'URL i la clau pública són visibles al navegador per disseny; Auth i RLS
+protegeixen les dades. El build no copia la resta de variables al web.
+No cal cap secret administratiu a Vercel.
+Després de canviar variables, fes un desplegament nou.
+Per a Preview usa un altre Supabase de proves o no habilitis variables:
+no connectis per defecte repositoris o desplegaments de proves a dades familiars.
+
+PAS 6 — URL I CONTRASENYES
+Quan Vercel et doni l'URL definitiva, copia-la a Supabase > Authentication >
+URL Configuration > Site URL. Afegeix també l'URL exacta acabada en / a Redirect URLs.
+Aquesta app rep la recuperació de contrasenya a l'arrel /, no a /auth/callback.
+El botó He oblidat la contrasenya necessita que el correu d'Auth estigui
+configurat per lliurar missatges a tots dos destinataris. Verifica-ho; el servei
+de correu per defecte de Supabase té restriccions. Pot caldre configurar SMTP.
+No autoritzis tots els dominis *.vercel.app indiscriminadament.
+
+PAS 7 — PRIMERA ENTRADA I IPHONE
+Obre la URL, entra amb el teu compte i completa les fitxes.
+La Raquel entra amb el seu compte i veurà les mateixes dades.
+Les dades s'actualitzen en tornar a l'app o prement Actualitzar dades.
+No hi ha subscripcions en temps real en aquesta versió.
+Per instal·lar: Safari > Compartir > Afegir a la pantalla d'inici.
+La icona i el manifest estan inclosos. Cal verificar-ho a l'iPhone real.
+Per pujar fotos des de l'iPhone, tria JPG/PNG/WebP; HEIC no s'accepta.
+Els documents poden pesar com a màxim 10 MB cadascun.
+Després de tancar sessió, verifica que les dades deixen de ser visibles.
+No s'inclou service worker per evitar guardar historials privats en caché.
+La sessió es conserva en aquest navegador; tanca-la en dispositius compartits.
+
+LÍMITS I MANTENIMENT
+No és una eina de diagnòstic ni prescriu tractaments. Registra les pautes del veterinari.
+Si s'interromp la connexió durant una pujada o supressió, pot quedar un fitxer
+sense fitxa o una fitxa sense fitxer; revisa Storage i Documents abans de repetir.
+Fer còpies de seguretat i vigilar l'espai i límits dels plans gratuïts.
+L'app no permet eliminar animals per evitar esborrar historials accidentalment.
+Amb diverses famílies assignades a un compte, aquesta versió mostra la primera:
+està pensada per als vostres dos comptes i una sola família.
+
+VERIFICACIÓ LOCAL
+Des de la carpeta del projecte: node --test tests/*.test.mjs
+Per construir: definir SUPABASE_URL i SUPABASE_PUBLISHABLE_KEY a l'entorn
+del procés i executar node scripts/build.mjs (o npm run build).
+.env.example és una referència: el script no carrega .env automàticament.
+Les proves locals comproven la configuració pública i rebutgen secrets.
+Les proves de base de dades requereixen executar tests/rls.sql a Supabase.
+
+DOCUMENTACIÓ OFICIAL
+https://supabase.com/docs/guides/database/postgres/row-level-security
+https://supabase.com/docs/guides/getting-started/api-keys
+https://supabase.com/docs/guides/storage/security/access-control
+https://supabase.com/docs/guides/auth/redirect-urls
+https://supabase.com/docs/guides/auth/auth-smtp
+https://vercel.com/docs/project-configuration/vercel-json

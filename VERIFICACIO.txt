@@ -1,0 +1,29 @@
+VERIFICACIÓ DEL PROJECTE RECONSTRUÏT — 16/11/2026
+
+Comprovat localment:
+- 5 proves automàtiques de configuració superades: clau pública, clau anon,
+  variables absents, rebuig de claus administratives i URL amb credencials.
+- Sintaxi JavaScript d'app.js i api.js correcta.
+- Generació del web completada amb configuració pública fictícia.
+- Pantalla d'entrada carregada i revisada visualment en una vista estreta.
+- Icones PNG per a pantalla d'inici generades.
+
+Revisat al codi SQL:
+- RLS en les cinc taules de l'aplicació; cap funció SECURITY DEFINER nova.
+- Membresia només modificable per administrador, sense endpoint administratiu.
+- USING i WITH CHECK basats en membresia de la família.
+- Claus foranes compostes per impedir associar registres a animals d'altra família.
+- Bucket privat; polítiques de lectura, pujada i supressió per família.
+- Cap política UPDATE d'objectes ni sobreescriptura de documents.
+
+Pendent al projecte real:
+- Executar supabase.sql i tests/rls.sql (no hi ha connexió de base de dades aquí).
+- Comprovar polítiques preexistents de storage.objects: una política permissiva
+  anterior pot ampliar l'accés. El diagnòstic inicial permet veure-les.
+- Provar inicis de sessió, recuperació per correu, documents i els dos comptes
+  familiars davant d'un compte aliè. Provar també l'accés sense sessió.
+- Comprovar la instal·lació a iPhone i el desplegament real de Vercel.
+
+El ZIP no inclou dist ni credencials reals. Es construeix a Vercel amb la seva
+configuració pública. No equival a una aplicació ja publicada ni a RLS validat
+experimentalment en el projecte real.
