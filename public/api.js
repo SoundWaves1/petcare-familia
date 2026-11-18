@@ -32,6 +32,7 @@ export const api = {
  acceptRecovery() {const h=new URLSearchParams(location.hash.slice(1));if(h.get('type')==='recovery'&&h.get('access_token')&&h.get('refresh_token')){save({access_token:h.get('access_token'),refresh_token:h.get('refresh_token'),expires_at:Date.now()/1000+Number(h.get('expires_in')||3600)});history.replaceState(null,'',location.pathname);return true;}return false;},
  async password(password) {return raw('/auth/v1/user',{method:'PUT',body:JSON.stringify({password})},await token());},
  async data(table,query='',method='GET',body) {return raw('/rest/v1/'+table+query,{method,headers:{Prefer:'return=representation'},...(body?{body:JSON.stringify(body)}:{})},await token());},
+ async rpc(name,body) {return raw('/rest/v1/rpc/'+name,{method:'POST',body:JSON.stringify(body)},await token());},
  async upload(path,file) {return raw('/storage/v1/object/petcare-documents/'+path,{method:'POST',headers:{'Content-Type':file.type,'x-upsert':'false'},body:file},await token());},
  async remove(path) {return raw('/storage/v1/object/petcare-documents',{method:'DELETE',body:JSON.stringify({prefixes:[path]})},await token());},
  async signed(path) {const data=await raw('/storage/v1/object/sign/petcare-documents/'+path,{method:'POST',body:JSON.stringify({expiresIn:60})},await token());return config.url+'/storage/v1'+data.signedURL;}

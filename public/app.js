@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { veterinary } from './vet.js';
 import {weightSeries,weightChart,kg} from './health.js';
 let detailTab='history';
 const app=document.querySelector('#app'),status=document.querySelector('#status'),logout=document.querySelector('#logout');
@@ -8,7 +9,7 @@ const date=d=>d?new Intl.DateTimeFormat('ca-ES',{dateStyle:'medium'}).format(new
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 function notify(message=''){status.textContent=message;}
 async function work(task){if(busy)return;busy=true;document.querySelectorAll('button[type=submit]').forEach(b=>b.disabled=true);notify('Un moment…');try{await task();notify('');}catch(e){notify(e.message);}finally{busy=false;document.querySelectorAll('button[type=submit]').forEach(b=>b.disabled=false);}}
-function clear(){generation++;pets=[];events=[];documents=[];family=null;selected=null;document.querySelector('dialog')?.remove();app.replaceChildren();}
+function clear(){generation++;pets=[];events=[];documents=[];family=null;selected=null;vet.reset();document.querySelectorAll('dialog').forEach(d=>d.remove());app.replaceChildren();}
 function login(){clear();logout.hidden=true;app.innerHTML=`<section class="login"><div class="eyebrow">El vostre espai privat</div><h1>Cuidar-los és<br>cosa de família.</h1><p class="sub">Tota la salut de Kylo, Venus i Thor, en un mateix lloc.</p><div class="panel"><h2>Benvingut a casa</h2><form id="login"><label>Correu electrònic<input name="email" type="email" autocomplete="username" required></label><label>Contrasenya<input name="password" type="password" autocomplete="current-password" required></label><button type="submit" class="primary">Entrar a PetCare</button><button type="button" id="recover">He oblidat la contrasenya</button></form></div><p class="note">Accés reservat als comptes familiars autoritzats.</p></section>`;
  app.querySelector('form').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);work(async()=>{await api.login(f.get('email'),f.get('password'));await load();});};
  document.querySelector('#recover').onclick=()=>{const email=app.querySelector('[name=email]');if(!email.reportValidity())return;work(async()=>{await api.recover(email.value);alert('Si el correu correspon a un compte, rebràs un enllaç per canviar la contrasenya.');});};
@@ -21,10 +22,11 @@ async function load(){if(!api.session){login();return;}const current=generation;
  family=memberships[0].family_id;
  const results=await Promise.all([api.data('pets',`?family_id=eq.${family}&order=name`),api.data('events',`?family_id=eq.${family}&order=event_date.desc`),api.data('documents',`?family_id=eq.${family}&order=created_at.desc`)]);
  if(!api.session || current!==generation)return;
- [pets,events,documents]=results;render();
+ [pets,events,documents]=results;await vet.load(family);if(!api.session||current!==generation)return;render();
 }
 function render(){logout.hidden=false;const pet=pets.find(p=>p.id===selected);if(!pet)selected=null;
- app.innerHTML=pet?detail(pet):dashboard();
+ app.innerHTML=vet.nav()+(vet.page==='home'?(pet?detail(pet)+vet.petHistory(pet):dashboard()+vet.summary()):vet.content());
+ vet.bind(app);
  app.querySelectorAll('[data-pet]').forEach(b=>b.onclick=()=>{selected=b.dataset.pet;detailTab="history";render();});
  app.querySelector('#back')?.addEventListener('click',()=>{selected=null;render();});
  app.querySelector('#refresh')?.addEventListener('click',()=>work(load));
@@ -62,6 +64,7 @@ const field=(label,name,value='',type='text',extra='')=>`<label>${label}<input t
 function editPet(p){dialog(p?'Editar fitxa':'Nou animal',`${field('Nom','name',p?.name,'text','required maxlength="100"')}<div class="fields">${field('Espècie','species',p?.species)}${field('Raça','breed',p?.breed)}${field('Naixement','birth_date',p?.birth_date,'date')}${field('Microxip','microchip',p?.microchip)}</div><label>Notes i al·lèrgies<textarea name="notes">${esc(p?.notes)}</textarea></label>`,async f=>{const body={...Object.fromEntries(f),family_id:family};body.birth_date||=null;await api.data('pets',p?'?id=eq.'+p.id:'',p?'PATCH':'POST',body);});}
 function editEvent(p,e){const kinds=['Visita','Vacuna','Medicament','Desparasitació','Pes','Recordatori'];dialog(e?'Editar registre':'Nova cura',`<label>Tipus<select name="kind">${kinds.map(k=>`<option ${e?.kind===k?'selected':''}>${k}</option>`).join('')}</select></label>${field('Títol','title',e?.title,'text','required maxlength="200"')}<div class="fields">${field('Data','event_date',e?.event_date||today(),'date','required')}${field('Propera data (opcional)','next_date',e?.next_date,'date')}${field('Pes en kg (opcional)','weight_kg',e?.weight_kg,'number','min="0.001" max="9999" step="0.001"')}${field('Cost en euros (opcional)','cost_eur',e?.cost_eur,'number','min="0" step="0.01"')}</div><label>Notes / pauta indicada pel veterinari<textarea name="notes">${esc(e?.notes)}</textarea></label>`,async f=>{const body={...Object.fromEntries(f),family_id:family,pet_id:p.id};for(const key of ['next_date','weight_kg','cost_eur'])body[key]||=null;await api.data('events',e?'?id=eq.'+e.id:'',e?'PATCH':'POST',body);});}
 async function upload(p,file){if(!['application/pdf','image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10485760)throw new Error('Tria un PDF, JPG, PNG o WebP de màxim 10 MB.');const extensions={'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png','image/webp':'webp'};const path=`${family}/${p.id}/${crypto.randomUUID()}.${extensions[file.type]}`;await api.upload(path,file);try{await api.data('documents','','POST',{family_id:family,pet_id:p.id,name:file.name,object_path:path});}catch(e){try{await api.remove(path);}catch{throw new Error('La fitxa del document no s’ha desat. El fitxer ha quedat pendent de neteja a Storage.');}throw e;}await load();}
+const vet=veterinary({api,esc,field,dialog,work,reload:load,render,openPet:id=>{selected=id;detailTab='history';render();},getContext:()=>({family,pets})});
 logout.onclick=()=>work(async()=>{try{await api.logout();}finally{login();}});
 window.addEventListener('petcare-signout',()=>{login();notify('La sessió ha caducat. Torna a entrar.');});
 window.addEventListener('petcare-session',()=>{clear();work(load);});
